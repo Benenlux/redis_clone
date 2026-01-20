@@ -1,11 +1,6 @@
-use std::{
-    io::{self, BufRead, BufReader, Read},
-    net::TcpStream,
-};
+use std::io::{self, BufRead};
 
-fn extract_string_from_buffer(
-    buf_reader: &mut BufReader<&mut TcpStream>,
-) -> std::io::Result<String> {
+fn extract_string_from_buffer<T: BufRead>(buf_reader: &mut T) -> std::io::Result<String> {
     let mut length_of_string = String::new();
     buf_reader.read_line(&mut length_of_string)?;
 
@@ -26,7 +21,7 @@ fn extract_string_from_buffer(
     String::from_utf8(buffer).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
 }
 
-pub fn parse_stream(buf_reader: &mut BufReader<&mut TcpStream>) -> String {
+pub fn parse_stream<T: BufRead>(buf_reader: &mut T) -> String {
     let mut resp_buffer = String::new();
     let stream_bytes = buf_reader.read_line(&mut resp_buffer);
     if stream_bytes.is_err() {
