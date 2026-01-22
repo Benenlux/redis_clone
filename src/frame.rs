@@ -64,8 +64,7 @@ fn parse_bulk_string<T: BufRead>(buf_reader: &mut T) -> Result<String, RespError
     let mut clrf = [0u8; 2];
     buf_reader.read_exact(&mut clrf)?;
 
-    let s = String::from_utf8(buffer)?;
-    Ok(s)
+    Ok(String::from_utf8(buffer)?)
 }
 
 pub fn parse_stream<T: BufRead>(buf_reader: &mut T) -> Result<Vec<String>, RespError> {
