@@ -97,6 +97,7 @@ pub fn parse_stream<T: BufRead>(buf_reader: &mut T) -> Result<Vec<String>, RespE
 #[cfg(test)]
 mod tests {
     use super::*;
+    use core::panic;
     use std::io::Cursor;
 
     #[test]
@@ -119,5 +120,47 @@ mod tests {
         let mut cursor = Cursor::new(&input[..]);
         let result = parse_bulk_string(&mut cursor);
         assert!(matches!(result, Err(RespError::ConnectionClosed)));
+    }
+    #[test]
+    fn test_invalid_string_prefix() {
+        let input = b":\r\nHello\r\n";
+        let mut cursor = Cursor::new(&input[..]);
+        let result = parse_bulk_string(&mut cursor);
+        match result {
+            Err(RespError::InvalidProtocol(msg)) => {
+                assert_eq!(msg, "Expected '$', got ':'");
+            }
+            _ => panic!("Expected InvalidProtocol error, got {:?}", result),
+        }
+    }
+    #[test]
+    fn test_invalid_string_number() {
+        let input = b"$abc\r\nHello\r\n";
+        let mut cursor = Cursor::new(&input[..]);
+        let result = parse_bulk_string(&mut cursor);
+        match result {
+            Err(RespError::InvalidProtocol(msg)) => {
+                assert_eq!(msg, "Invalid bulk string length: 'abc'");
+            }
+            _ => panic!("Exptected InvalidProtocol error"),
+        }
+    }
+    #[test]
+    fn test_invalid_utf8_string() {
+        let input = b"$1\r\n\xFF\r\n";
+        let mut cursor = Cursor::new(&input[..]);
+        let result = parse_bulk_string(&mut cursor);
+
+        assert!(matches!(result, Err(RespError::Utf8(_))))
+    }
+    #[test]
+    fn test_io_error_unexpected_eof() {
+        // Case: Length says 5, but stream ends after 2 bytes
+        let input = b"$5\r\nHi";
+        let mut cursor = Cursor::new(&input[..]);
+        let result = parse_bulk_string(&mut cursor);
+
+        // This triggers `read_exact` failure, which is a standard IO error
+        assert!(matches!(result, Err(RespError::Io(_))));
     }
 }
