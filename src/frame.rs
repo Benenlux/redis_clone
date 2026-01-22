@@ -1,18 +1,18 @@
+use io::ErrorKind::InvalidData as IoError;
 use std::io::{self, BufRead};
 
 fn extract_string_from_buffer<T: BufRead>(buf_reader: &mut T) -> std::io::Result<String> {
     let mut length_of_string = String::new();
     buf_reader.read_line(&mut length_of_string)?;
 
-    if !length_of_string.starts_with('$') {
-        return Err(io::Error::new(io::ErrorKind::InvalidData, "Expected $"));
+    let string_size: usize = match length_of_string.split_at(1) {
+        ("$", size) if size.trim().parse::<usize>().is_ok() => {
+            size.trim().parse::<usize>().expect("It is already ok!")
+        }
+        (_, _) => return Err(io::Error::new(IoError, "Invalid String")),
     };
-    let length_str = length_of_string[1..].trim();
-    let length = length_str
-        .parse()
-        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid Length"))?;
 
-    let mut buffer = vec![0u8; length];
+    let mut buffer = vec![0u8; string_size];
     buf_reader.read_exact(&mut buffer)?;
 
     let mut clrf = [0u8; 2];
