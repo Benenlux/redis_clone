@@ -1,7 +1,7 @@
 use io::ErrorKind::InvalidData as IoError;
 use std::io::{self, BufRead};
 
-fn extract_string_from_buffer<T: BufRead>(buf_reader: &mut T) -> std::io::Result<String> {
+fn parse_bulk_string<T: BufRead>(buf_reader: &mut T) -> std::io::Result<String> {
     let mut length_of_string = String::new();
     buf_reader.read_line(&mut length_of_string)?;
 
@@ -34,7 +34,7 @@ pub fn parse_stream<T: BufRead>(buf_reader: &mut T) -> String {
     };
     let mut parsed_strings: Vec<String> = Vec::new();
     for _string in 0..request_size {
-        match extract_string_from_buffer(buf_reader) {
+        match parse_bulk_string(buf_reader) {
             Ok(string) => parsed_strings.push(string),
             Err(_) => {
                 return String::from("Unable to read bulk string");
