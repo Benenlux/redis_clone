@@ -12,8 +12,12 @@ fn handle_stream(mut stream: TcpStream) {
     let mut buf_reader = BufReader::new(&mut stream);
 
     loop {
-        let response = parse_stream(&mut buf_reader);
+        let parsed_stream = parse_stream(&mut buf_reader);
 
+        let response = match parsed_stream {
+            Err(_) => "+Error\r\n",
+            Ok(_) => "+Ok\r\n",
+        };
         if response.is_empty() {
             println!("Connection closed");
             break;
