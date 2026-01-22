@@ -99,20 +99,14 @@ mod tests {
     use core::panic;
     use std::io::Cursor;
 
+    //Unit tests for parse_bulk_string
     #[test]
     fn test_parse_string() {
         let input = b"$5\r\nHello\r\n";
         let mut cursor = Cursor::new(&input[..]);
         let result = parse_bulk_string(&mut cursor).unwrap();
         assert_eq!(result, "Hello")
-    }
-    #[test]
-    fn test_parse_bulk_string() {
-        let input = b"*2\r\n$5\r\nHello\r\n$5\r\nWorld\r\n";
-        let mut cursor = Cursor::new(&input[..]);
-        let result = parse_stream(&mut cursor).unwrap();
-        assert_eq!(result, Vec::from(["Hello", "World"]))
-    }
+    } 
     #[test]
     fn test_empty_string() {
         let input = b"";
@@ -154,12 +148,19 @@ mod tests {
     }
     #[test]
     fn test_io_error_unexpected_eof() {
-        // Case: Length says 5, but stream ends after 2 bytes
         let input = b"$5\r\nHi";
         let mut cursor = Cursor::new(&input[..]);
         let result = parse_bulk_string(&mut cursor);
 
-        // This triggers `read_exact` failure, which is a standard IO error
         assert!(matches!(result, Err(RespError::Io(_))));
+    }
+
+    //Unit tests for parse_stream
+    #[test]
+    fn test_parse_bulk_string() {
+        let input = b"*2\r\n$5\r\nHello\r\n$5\r\nWorld\r\n";
+        let mut cursor = Cursor::new(&input[..]);
+        let result = parse_stream(&mut cursor).unwrap();
+        assert_eq!(result, Vec::from(["Hello", "World"]))
     }
 }
