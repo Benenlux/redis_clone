@@ -41,7 +41,7 @@ impl From<FromUtf8Error> for RespError {
 fn parse_bulk_string<T: BufRead>(buf_reader: &mut T) -> Result<String, RespError> {
     let mut length_of_string = String::new();
     match buf_reader.read_line(&mut length_of_string) {
-        Err(_) => return Err(RespError::ConnectionClosed),
+        Err(e) => return Err(RespError::Io(e)),
         Ok(0) => return Err(RespError::ConnectionClosed),
         Ok(size) => size,
     };
