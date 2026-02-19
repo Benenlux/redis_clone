@@ -61,8 +61,8 @@ fn parse_bulk_string<T: BufRead>(buf_reader: &mut T) -> Result<String, RespError
     let mut buffer = vec![0u8; string_size];
     buf_reader.read_exact(&mut buffer)?;
 
-    let mut clrf = [0u8; 2];
-    buf_reader.read_exact(&mut clrf)?;
+    let mut crlf = [0u8; 2];
+    buf_reader.read_exact(&mut crlf)?;
 
     Ok(String::from_utf8(buffer)?)
 }
@@ -106,7 +106,7 @@ mod tests {
         let mut cursor = Cursor::new(&input[..]);
         let result = parse_bulk_string(&mut cursor).unwrap();
         assert_eq!(result, "Hello")
-    } 
+    }
     #[test]
     fn test_empty_string() {
         let input = b"";
@@ -135,7 +135,7 @@ mod tests {
             Err(RespError::InvalidProtocol(msg)) => {
                 assert_eq!(msg, "Invalid bulk string length: 'abc'");
             }
-            _ => panic!("Exptected InvalidProtocol error"),
+            _ => panic!("Expected InvalidProtocol error"),
         }
     }
     #[test]
