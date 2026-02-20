@@ -1,4 +1,3 @@
-use io::ErrorKind::InvalidData as IoError;
 use std::{
     fmt,
     io::{self, BufRead},
