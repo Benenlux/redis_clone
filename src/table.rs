@@ -1,7 +1,9 @@
 use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::RwLock;
 
 pub struct Table {
-    cache: HashMap<String, String>,
+    cache: Arc<RwLock<HashMap<String, String>>>,
 }
 
 #[cfg(test)]
