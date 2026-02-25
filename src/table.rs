@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::sync::RwLock;
 
 pub struct Table {
@@ -38,6 +37,8 @@ impl Table {
 
 #[cfg(test)]
 mod tests {
+    use std::thread;
+
     use super::*;
     static TEST_STRING: [&str; 2] = ["Currency", "Euro"];
     #[test]
@@ -56,5 +57,30 @@ mod tests {
 
         assert_eq!(get_result, String::from(TEST_STRING[1]));
         assert_eq!(String::from("OK"), set_result);
+    }
+
+    #[test]
+    fn multithread_set_get() {
+        let table = Table::new();
+
+        const NUM_THREADS: usize = 10;
+        const INSERTS_PER_THREAD: usize = 100;
+        thread::scope(|s| {
+            for thread_id in 0..NUM_THREADS {
+                let table_ref = &table;
+
+                s.spawn(move || {
+                    for i in 0..INSERTS_PER_THREAD {
+                        let key = format!("key_{}_{}", thread_id, i);
+                        let val = format!("val_{}_{}", thread_id, i);
+                        table_ref.set(key, val);
+                    }
+                });
+            }
+        });
+        let cache = table.cache.read().unwrap();
+        let expected_total = NUM_THREADS * INSERTS_PER_THREAD;
+        assert_eq!(expected_total, cache.len());
+        assert_eq!(table.get("key_9_4".to_string()), "val_9_4");
     }
 }
