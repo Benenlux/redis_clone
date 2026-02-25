@@ -3,13 +3,13 @@ use std::sync::Arc;
 use std::sync::RwLock;
 
 pub struct Table {
-    cache: Arc<RwLock<HashMap<String, String>>>,
+    cache: RwLock<HashMap<String, String>>,
 }
 
 impl Table {
     pub fn new() -> Self {
         Self {
-            cache: Arc::new(RwLock::new(HashMap::new())),
+            cache: RwLock::new(HashMap::new()),
         }
     }
     //TODO: handle overwritten keys
