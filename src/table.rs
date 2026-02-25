@@ -33,4 +33,14 @@ mod tests {
 
         assert_eq!(String::from("OK"), result);
     }
+
+    #[test]
+    fn test_set_get_string() {
+        let mut table = Table::new();
+        let set_result = table.set(String::from(TEST_STRING[0]), String::from(TEST_STRING[1]));
+        let get_result = table.get(String::from(TEST_STRING[0]));
+
+        assert_eq!(get_result, String::from(TEST_STRING[1]));
+        assert_eq!(String::from("OK"), set_result);
+    }
 }
