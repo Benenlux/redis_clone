@@ -22,6 +22,20 @@ impl Table {
             Err(_) => String::from("ERROR"),
         }
     }
+    fn get(&self, key: String) -> String {
+        match self.cache.read() {
+            Ok(l_cache) => {
+                let val = l_cache.get(&key);
+                match val {
+                    Some(val) => val.clone(),
+                    None => String::from("(nil)"),
+                }
+            }
+            Err(_) => String::from("ERROR"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
