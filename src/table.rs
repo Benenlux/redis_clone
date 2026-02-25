@@ -41,7 +41,7 @@ mod tests {
     use super::*;
     static TEST_STRING: [&str; 2] = ["Currency", "Euro"];
     #[test]
-    fn test_set_string() {
+    fn set_string() {
         let mut table = Table::new();
         let result = table.set(String::from(TEST_STRING[0]), String::from(TEST_STRING[1]));
 
@@ -49,7 +49,7 @@ mod tests {
     }
 
     #[test]
-    fn test_set_get_string() {
+    fn set_get_string() {
         let mut table = Table::new();
         let set_result = table.set(String::from(TEST_STRING[0]), String::from(TEST_STRING[1]));
         let get_result = table.get(String::from(TEST_STRING[0]));
