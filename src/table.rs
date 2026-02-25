@@ -6,6 +6,16 @@ pub struct Table {
     cache: Arc<RwLock<HashMap<String, String>>>,
 }
 
+    //TODO: handle overwritten keys
+    fn set(&mut self, key: String, val: String) -> String {
+        match self.cache.write() {
+            Ok(mut l_cache) => {
+                l_cache.insert(key, val);
+                String::from("OK")
+            }
+            Err(_) => String::from("ERROR"),
+        }
+    }
 #[cfg(test)]
 mod tests {
     use super::*;
