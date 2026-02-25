@@ -6,6 +6,12 @@ pub struct Table {
     cache: Arc<RwLock<HashMap<String, String>>>,
 }
 
+impl Table {
+    pub fn new() -> Self {
+        Self {
+            cache: Arc::new(RwLock::new(HashMap::new())),
+        }
+    }
     //TODO: handle overwritten keys
     fn set(&mut self, key: String, val: String) -> String {
         match self.cache.write() {
