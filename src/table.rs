@@ -81,7 +81,12 @@ mod tests {
         });
         let cache = table.cache.read().unwrap();
         let expected_total = NUM_THREADS * INSERTS_PER_THREAD;
+
+        let last_thread_id = NUM_THREADS - 1;
+        let key = format!("key_{}_4", last_thread_id);
+        let expected_val = format!("val_{}_4", last_thread_id);
+
+        assert_eq!(table.get(key), expected_val);
         assert_eq!(expected_total, cache.len());
-        assert_eq!(table.get("key_9_4".to_string()), "val_9_4");
     }
 }
