@@ -13,7 +13,7 @@ impl Table {
         }
     }
     //TODO: handle overwritten keys
-    fn set(&mut self, key: String, val: String) -> String {
+    fn set(&self, key: String, val: String) -> String {
         match self.cache.write() {
             Ok(mut l_cache) => {
                 l_cache.insert(key, val);
@@ -42,7 +42,7 @@ mod tests {
     static TEST_STRING: [&str; 2] = ["Currency", "Euro"];
     #[test]
     fn set_string() {
-        let mut table = Table::new();
+        let table = Table::new();
         let result = table.set(String::from(TEST_STRING[0]), String::from(TEST_STRING[1]));
 
         assert_eq!(String::from("OK"), result);
@@ -50,7 +50,7 @@ mod tests {
 
     #[test]
     fn set_get_string() {
-        let mut table = Table::new();
+        let table = Table::new();
         let set_result = table.set(String::from(TEST_STRING[0]), String::from(TEST_STRING[1]));
         let get_result = table.get(String::from(TEST_STRING[0]));
 
