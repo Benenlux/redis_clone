@@ -11,8 +11,8 @@ impl Table {
             cache: RwLock::new(HashMap::new()),
         }
     }
-    //TODO: handle overwritten keys
-    fn set(&self, key: String, val: String) -> String {
+    // TODO: handle overwritten keys
+    pub fn set(&self, key: String, val: String) -> String {
         match self.cache.write() {
             Ok(mut l_cache) => {
                 l_cache.insert(key, val);
@@ -21,7 +21,7 @@ impl Table {
             Err(_) => String::from("ERROR"),
         }
     }
-    fn get(&self, key: String) -> String {
+    pub fn get(&self, key: String) -> String {
         match self.cache.read() {
             Ok(l_cache) => {
                 let val = l_cache.get(&key);
@@ -30,6 +30,7 @@ impl Table {
                     None => String::from("(nil)"),
                 }
             }
+            // TODO: handle poisoned locks
             Err(_) => String::from("ERROR"),
         }
     }
