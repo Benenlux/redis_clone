@@ -26,6 +26,6 @@ mod tests {
         let mut table = Table::new();
         let result = table.set(test_string[0].clone(), test_string[1].clone());
 
-        assert_eq!("OK", result);
+        assert_eq!(String::from("OK"), result);
     }
 }
