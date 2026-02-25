@@ -1,4 +1,5 @@
 pub(crate) mod frame;
+pub(crate) mod table;
 
 use std::{
     io::{BufReader, Write},
