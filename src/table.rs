@@ -25,12 +25,11 @@ impl Table {
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    static TEST_STRING: [&str; 2] = ["Currency", "Euro"];
     #[test]
     fn test_set_string() {
-        let test_string: Vec<String> = vec!["Currency".to_string(), "Euro".to_string()];
         let mut table = Table::new();
-        let result = table.set(test_string[0].clone(), test_string[1].clone());
+        let result = table.set(String::from(TEST_STRING[0]), String::from(TEST_STRING[1]));
 
         assert_eq!(String::from("OK"), result);
     }
