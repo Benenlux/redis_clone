@@ -58,7 +58,7 @@ mod tests {
             "CAR".to_string(),
             "vroom vroom".to_string(),
         ];
-        let response = handle_request(request, &table);
+        let response = handle_request(request, &table).unwrap_or_else(|e| e.to_string());
         assert_eq!(response, "OK");
     }
 
@@ -70,15 +70,23 @@ mod tests {
             "CAR".to_string(),
             "vroom vroom".to_string(),
         ];
-        let response_set = handle_request(request, &table);
+        let response_set = handle_request(request, &table).unwrap_or_else(|e| e.to_string());
 
         let request_2 = vec![
             "GET".to_string(),
             "CAR".to_string(),
             "vroom vroom".to_string(),
         ];
-        let response_get = handle_request(request_2, &table);
+        let response_get = handle_request(request_2, &table).unwrap_or_else(|e| e.to_string());
         assert_eq!(response_set, "OK");
         assert_eq!(response_get, "vroom vroom".to_string());
+    }
+
+    #[test]
+    fn only_command() {
+        let table = Arc::new(Table::new());
+        let request = vec!["SET".to_string()];
+        let response = handle_request(request, &table).unwrap_or_else(|e| e.to_string());
+        assert_eq!(response, "+Error\r\n")
     }
 }
