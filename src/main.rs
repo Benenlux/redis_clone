@@ -1,4 +1,5 @@
 pub(crate) mod frame;
+pub(crate) mod handler;
 pub(crate) mod table;
 
 use std::{
@@ -6,7 +7,7 @@ use std::{
     net::{TcpListener, TcpStream},
 };
 
-use crate::frame::parse_stream;
+use crate::{frame::parse_stream, handler::handle_request};
 
 fn handle_stream(mut stream: TcpStream) {
     let mut buf_reader = BufReader::new(&mut stream);
@@ -18,9 +19,9 @@ fn handle_stream(mut stream: TcpStream) {
             Err(e) => {
                 eprintln!("Error while parsing stream: {}", e);
 
-                "+Error\r\n"
+                String::from("+Error\r\n")
             }
-            Ok(_) => "+Ok\r\n",
+            Ok(req) => handle_request(req),
         };
         if response.is_empty() {
             println!("Connection closed");
