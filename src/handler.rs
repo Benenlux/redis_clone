@@ -1,5 +1,7 @@
 use std::{str::FromStr, sync::Arc};
 
+use redis_clone::encode_error;
+
 use crate::table::Table;
 
 #[derive(Debug, PartialEq)]
@@ -22,24 +24,30 @@ impl FromStr for CommandTypes {
     }
 }
 
-pub fn handle_request(request: Vec<String>, table: &Arc<Table>) -> Result<String, &str> {
+pub fn handle_request(request: Vec<String>, table: &Arc<Table>) -> Result<String, String> {
     let mut req_iter = request.into_iter();
     let req_command = match req_iter.next() {
         Some(val) => val,
-        None => return Err("+Error\r\n"),
+        None => return Err(encode_error("Expected command")),
     };
     let command = match req_command.parse::<CommandTypes>() {
         Ok(command) => command,
-        Err(_) => return Err("+Error\r\n"),
+        Err(_) => return Err(encode_error("Received invalid command")),
     };
     match command {
         CommandTypes::Get => {
-            let key = req_iter.next().ok_or("+Error\r\n")?;
+            let key = req_iter.next().ok_or(encode_error(
+                "Wrong number of arguments for 'get' command, expected key",
+            ))?;
             Ok(table.get(key))
         }
         CommandTypes::Set => {
-            let key = req_iter.next().ok_or("+Error\r\n")?;
-            let val = req_iter.next().ok_or("+Error\r\n")?;
+            let key = req_iter.next().ok_or(encode_error(
+                "Wrong number of arguments for 'set' command, expected key",
+            ))?;
+            let val = req_iter.next().ok_or(encode_error(
+                "Wrong number of arguments for 'set' command, expected value",
+            ))?;
             Ok(table.set(key, val))
         }
     }
@@ -47,6 +55,8 @@ pub fn handle_request(request: Vec<String>, table: &Arc<Table>) -> Result<String
 
 #[cfg(test)]
 mod tests {
+
+    use redis_clone::encode_simple_string;
 
     use super::*;
 
@@ -59,7 +69,7 @@ mod tests {
             "vroom vroom".to_string(),
         ];
         let response = handle_request(request, &table).unwrap_or_else(|e| e.to_string());
-        assert_eq!(response, "OK");
+        assert_eq!(response, encode_simple_string("OK"));
     }
 
     #[test]
@@ -78,7 +88,7 @@ mod tests {
             "vroom vroom".to_string(),
         ];
         let response_get = handle_request(request_2, &table).unwrap_or_else(|e| e.to_string());
-        assert_eq!(response_set, "OK");
+        assert_eq!(response_set, encode_simple_string("OK"));
         assert_eq!(response_get, "vroom vroom".to_string());
     }
 
@@ -87,6 +97,9 @@ mod tests {
         let table = Arc::new(Table::new());
         let request = vec!["SET".to_string()];
         let response = handle_request(request, &table).unwrap_or_else(|e| e.to_string());
-        assert_eq!(response, "+Error\r\n")
+        assert_eq!(
+            response,
+            encode_error("Wrong number of arguments for 'set' command, expected key")
+        )
     }
 }
