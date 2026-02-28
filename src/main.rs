@@ -1,5 +1,6 @@
 pub(crate) mod frame;
 pub(crate) mod handler;
+pub(crate) mod lib;
 pub(crate) mod table;
 
 use std::{
@@ -22,7 +23,7 @@ fn handle_stream(mut stream: TcpStream, table: Arc<Table>) {
 
                 String::from("+Error\r\n")
             }
-            Ok(req) => handle_request(req, &table),
+            Ok(req) => handle_request(req, &table).unwrap_or_else(|e| e),
         };
         if response.is_empty() {
             println!("Connection closed");
