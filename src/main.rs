@@ -1,6 +1,5 @@
 pub(crate) mod frame;
 pub(crate) mod handler;
-pub(crate) mod lib;
 pub(crate) mod table;
 
 use std::{
@@ -8,6 +7,8 @@ use std::{
     net::{TcpListener, TcpStream},
     sync::Arc,
 };
+
+use redis_clone::encode_error;
 
 use crate::{frame::parse_stream, handler::handle_request, table::Table};
 
@@ -21,7 +22,7 @@ fn handle_stream(mut stream: TcpStream, table: Arc<Table>) {
             Err(e) => {
                 eprintln!("Error while parsing stream: {}", e);
 
-                String::from("+Error\r\n")
+                encode_error("Error")
             }
             Ok(req) => handle_request(req, &table).unwrap_or_else(|e| e),
         };
