@@ -44,3 +44,41 @@ pub fn handle_request(request: Vec<String>, table: &Arc<Table>) -> String {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn valid_set_command() {
+        let table = Arc::new(Table::new());
+        let request = vec![
+            "SET".to_string(),
+            "CAR".to_string(),
+            "vroom vroom".to_string(),
+        ];
+        let response = handle_request(request, &table);
+        assert_eq!(response, "OK");
+    }
+
+    #[test]
+    fn valid_set_get_command() {
+        let table = Arc::new(Table::new());
+        let request = vec![
+            "SET".to_string(),
+            "CAR".to_string(),
+            "vroom vroom".to_string(),
+        ];
+        let response_set = handle_request(request, &table);
+
+        let request_2 = vec![
+            "GET".to_string(),
+            "CAR".to_string(),
+            "vroom vroom".to_string(),
+        ];
+        let response_get = handle_request(request_2, &table);
+        assert_eq!(response_set, "OK");
+        assert_eq!(response_get, "vroom vroom".to_string());
+    }
+}
