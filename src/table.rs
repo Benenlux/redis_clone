@@ -58,8 +58,8 @@ mod tests {
         let set_result = table.set(String::from(TEST_STRING[0]), String::from(TEST_STRING[1]));
         let get_result = table.get(String::from(TEST_STRING[0]));
 
-        assert_eq!(get_result, String::from(TEST_STRING[1]));
-        assert_eq!(encode_simple_string("OK"), set_result);
+        assert_eq!(get_result, encode_simple_string(TEST_STRING[1]));
+        assert_eq!(set_result, encode_simple_string("OK"));
     }
 
     #[test]
@@ -88,7 +88,7 @@ mod tests {
         let key = format!("key_{}_4", last_thread_id);
         let expected_val = format!("val_{}_4", last_thread_id);
 
-        assert_eq!(table.get(key), expected_val);
+        assert_eq!(table.get(key), encode_simple_string(expected_val));
         assert_eq!(expected_total, cache.len());
     }
 }
