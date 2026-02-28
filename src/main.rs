@@ -33,13 +33,15 @@ fn handle_stream(mut stream: TcpStream) {
 }
 
 fn main() {
+    let shared_table = Arc::new(Table::new());
     let listener = TcpListener::bind("127.0.0.1:6379").unwrap();
 
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
+                let table_clone = shared_table.clone();
                 std::thread::spawn(|| {
-                    handle_stream(stream);
+                    handle_stream(stream, table_clone);
                 });
             }
             Err(e) => println!("Error: {}", e),
