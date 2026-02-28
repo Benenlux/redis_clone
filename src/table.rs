@@ -28,7 +28,7 @@ impl Table {
             Ok(l_cache) => {
                 let val = l_cache.get(&key);
                 match val {
-                    Some(val) => val.clone(),
+                    Some(val) => encode_simple_string(val.clone()),
                     None => encode_simple_string("(nil)"),
                 }
             }
