@@ -101,10 +101,10 @@ mod tests {
         ];
         let response_get = handle_request(request_2, &table).unwrap_or_else(|e| e.to_string());
         assert_eq!(response_set, encode_simple_string("OK"));
-        assert_eq!(response_get, "vroom vroom".to_string());
+        assert_eq!(response_get, encode_simple_string("vroom vroom"));
     }
-
-    fn inalid_set_get_command() {
+    #[test]
+    fn invalid_set_get_command() {
         let table = Arc::new(Table::new());
         let request = vec![
             "SET".to_string(),
