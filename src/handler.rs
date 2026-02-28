@@ -73,6 +73,18 @@ mod tests {
     }
 
     #[test]
+    fn no_set_val() {
+        let table = Arc::new(Table::new());
+        let request = vec!["SET".to_string(), "CAR".to_string()];
+        let response = handle_request(request, &table).unwrap_or_else(|e| e.to_string());
+
+        assert_eq!(
+            response,
+            encode_error("Wrong number of arguments for 'set' command, expected value")
+        )
+    }
+
+    #[test]
     fn valid_set_get_command() {
         let table = Arc::new(Table::new());
         let request = vec![
@@ -90,6 +102,25 @@ mod tests {
         let response_get = handle_request(request_2, &table).unwrap_or_else(|e| e.to_string());
         assert_eq!(response_set, encode_simple_string("OK"));
         assert_eq!(response_get, "vroom vroom".to_string());
+    }
+
+    fn inalid_set_get_command() {
+        let table = Arc::new(Table::new());
+        let request = vec![
+            "SET".to_string(),
+            "CAR".to_string(),
+            "vroom vroom".to_string(),
+        ];
+        let response_set = handle_request(request, &table).unwrap_or_else(|e| e.to_string());
+
+        let request_2 = vec![
+            "GET".to_string(),
+            "Bike".to_string(),
+            "tring tring".to_string(),
+        ];
+        let response_get = handle_request(request_2, &table).unwrap_or_else(|e| e.to_string());
+        assert_eq!(response_set, encode_simple_string("OK"));
+        assert_eq!(response_get, encode_simple_string("(nil)"));
     }
 
     #[test]
