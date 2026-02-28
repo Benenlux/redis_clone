@@ -5,11 +5,12 @@ pub(crate) mod table;
 use std::{
     io::{BufReader, Write},
     net::{TcpListener, TcpStream},
+    sync::Arc,
 };
 
-use crate::{frame::parse_stream, handler::handle_request};
+use crate::{frame::parse_stream, handler::handle_request, table::Table};
 
-fn handle_stream(mut stream: TcpStream) {
+fn handle_stream(mut stream: TcpStream, table: Arc<Table>) {
     let mut buf_reader = BufReader::new(&mut stream);
 
     loop {
@@ -21,7 +22,7 @@ fn handle_stream(mut stream: TcpStream) {
 
                 String::from("+Error\r\n")
             }
-            Ok(req) => handle_request(req),
+            Ok(req) => handle_request(req, &table),
         };
         if response.is_empty() {
             println!("Connection closed");
