@@ -22,25 +22,25 @@ impl FromStr for CommandTypes {
     }
 }
 
-pub fn handle_request(request: Vec<String>, table: &Arc<Table>) -> String {
+pub fn handle_request(request: Vec<String>, table: &Arc<Table>) -> Result<String, &str> {
     let mut req_iter = request.into_iter();
     let req_command = match req_iter.next() {
         Some(val) => val,
-        None => return String::from("+Error\r\n"),
+        None => return Err("+Error\r\n"),
     };
     let command = match req_command.parse::<CommandTypes>() {
         Ok(command) => command,
-        Err(_) => return String::from("+Error\r\n"),
+        Err(_) => return Err("+Error\r\n"),
     };
     match command {
         CommandTypes::Get => {
-            let key = req_iter.next().unwrap_or_default();
-            table.get(key)
+            let key = req_iter.next().ok_or("+Error\r\n")?;
+            Ok(table.get(key))
         }
         CommandTypes::Set => {
-            let key = req_iter.next().unwrap_or_default();
-            let val = req_iter.next().unwrap_or_default();
-            table.set(key, val)
+            let key = req_iter.next().ok_or("+Error\r\n")?;
+            let val = req_iter.next().ok_or("+Error\r\n")?;
+            Ok(table.set(key, val))
         }
     }
 }
