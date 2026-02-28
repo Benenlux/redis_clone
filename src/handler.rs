@@ -102,4 +102,24 @@ mod tests {
             encode_error("Wrong number of arguments for 'set' command, expected key")
         )
     }
+
+    #[test]
+    fn no_command() {
+        let table = Arc::new(Table::new());
+        let request: Vec<String> = Vec::new();
+
+        let response = handle_request(request, &table).unwrap_or_else(|e| e);
+
+        assert_eq!(response, encode_error("Expected command"))
+    }
+
+    #[test]
+    fn invalid_command() {
+        let table = Arc::new(Table::new());
+        let request = vec!["SUPERCOOLCOMMAND".to_string()];
+
+        let response = handle_request(request, &table).unwrap_or_else(|e| e);
+
+        assert_eq!(response, encode_error("Received invalid command"))
+    }
 }
