@@ -14,10 +14,8 @@ use crate::{frame::parse_stream, handler::handle_request, table::Table};
 
 fn handle_stream(mut stream: TcpStream, table: Arc<Table>) {
     let mut buf_reader = BufReader::new(&mut stream);
-
     loop {
         let parsed_stream = parse_stream(&mut buf_reader);
-
         let response = match parsed_stream {
             Err(e) => {
                 eprintln!("Error while parsing stream: {}", e);

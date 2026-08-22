@@ -69,6 +69,7 @@ mod tests {
         const NUM_THREADS: usize = 10;
         const INSERTS_PER_THREAD: usize = 100;
         thread::scope(|s| {
+            //Spawn a thread that inserts 100 times, 10 times.
             for thread_id in 0..NUM_THREADS {
                 let table_ref = &table;
 
