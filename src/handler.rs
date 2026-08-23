@@ -1,8 +1,7 @@
-use std::{str::FromStr, sync::Arc};
-
-use redis_clone::encode_error;
-
+use crate::commands::set;
 use crate::table::Table;
+use redis_clone::encode_error;
+use std::{str::FromStr, sync::Arc};
 
 #[derive(Debug, PartialEq)]
 pub enum CommandTypes {
@@ -39,17 +38,9 @@ pub fn handle_request(request: Vec<String>, table: &Arc<Table>) -> Result<String
             let key = req_iter.next().ok_or(encode_error(
                 "Wrong number of arguments for 'get' command, expected key",
             ))?;
-            Ok(table.get(key))
+            Ok(table.get(&key))
         }
-        CommandTypes::Set => {
-            let key = req_iter.next().ok_or(encode_error(
-                "Wrong number of arguments for 'set' command, expected key",
-            ))?;
-            let val = req_iter.next().ok_or(encode_error(
-                "Wrong number of arguments for 'set' command, expected value",
-            ))?;
-            Ok(table.set(key, val))
-        }
+        CommandTypes::Set => set::handle_set(req_iter, table),
     }
 }
 

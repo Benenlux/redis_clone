@@ -13,7 +13,6 @@ impl Table {
             cache: RwLock::new(HashMap::new()),
         }
     }
-    // TODO: handle overwritten keys
     pub fn set(&self, key: String, val: String) -> String {
         match self.cache.write() {
             Ok(mut l_cache) => {
@@ -23,17 +22,18 @@ impl Table {
             Err(_) => encode_error("Couldn't set key val"),
         }
     }
-    pub fn get(&self, key: String) -> String {
+
+    pub fn get(&self, key: &String) -> String {
         match self.cache.read() {
             Ok(l_cache) => {
-                let val = l_cache.get(&key);
+                let val = l_cache.get(key);
                 match val {
                     Some(val) => encode_simple_string(val.clone()),
                     None => encode_simple_string("(nil)"),
                 }
             }
             // TODO: handle poisoned locks
-            Err(_) => String::from("ERROR"),
+            Err(_) => encode_error("Poisoned lock"),
         }
     }
 }
@@ -56,7 +56,7 @@ mod tests {
     fn set_get_string() {
         let table = Table::new();
         let set_result = table.set(String::from(TEST_STRING[0]), String::from(TEST_STRING[1]));
-        let get_result = table.get(String::from(TEST_STRING[0]));
+        let get_result = table.get(&String::from(TEST_STRING[0]));
 
         assert_eq!(get_result, encode_simple_string(TEST_STRING[1]));
         assert_eq!(set_result, encode_simple_string("OK"));
@@ -89,7 +89,7 @@ mod tests {
         let key = format!("key_{}_4", last_thread_id);
         let expected_val = format!("val_{}_4", last_thread_id);
 
-        assert_eq!(table.get(key), encode_simple_string(expected_val));
+        assert_eq!(table.get(&key), encode_simple_string(expected_val));
         assert_eq!(expected_total, cache.len());
     }
 }

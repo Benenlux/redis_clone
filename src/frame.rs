@@ -86,6 +86,13 @@ pub fn parse_stream<T: BufRead>(buf_reader: &mut T) -> Result<Vec<String>, RespE
         return Err(RespError::ConnectionClosed);
     }
 
+    if cfg!(feature = "verbose-print") {
+        println!("Got stream: {:?}", resp_buffer);
+    }
+
+    if resp_buffer.len() < 2 {
+        return Err(RespError::ConnectionClosed);
+    }
     //Because this is a user request, the size is not known at compile time
     //Thus there needs to be a check to see if the number of elements is indeed correctly parsed
     let request_size = match resp_buffer[1..resp_buffer.len() - 2].parse::<usize>() {

@@ -1,3 +1,4 @@
+mod commands;
 pub(crate) mod frame;
 pub(crate) mod handler;
 pub(crate) mod table;
@@ -20,7 +21,7 @@ fn handle_stream(mut stream: TcpStream, table: Arc<Table>) {
             Err(e) => {
                 eprintln!("Error while parsing stream: {}", e);
 
-                encode_error("Error")
+                break;
             }
             Ok(req) => handle_request(req, &table).unwrap_or_else(|e| e),
         };
@@ -29,7 +30,13 @@ fn handle_stream(mut stream: TcpStream, table: Arc<Table>) {
             break;
         }
 
-        buf_reader.get_mut().write_all(response.as_bytes()).unwrap();
+        if cfg!(feature = "verbose-print") {
+            println!("Sent back: {:?}", response);
+        }
+        if let Err(e) = buf_reader.get_mut().write_all(response.as_bytes()) {
+            eprintln!("Failed to write to client (disconnected): {}", e);
+            break;
+        }
     }
 }
 
