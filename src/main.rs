@@ -1,8 +1,8 @@
 mod commands;
+pub(crate) mod error;
 pub(crate) mod frame;
 pub(crate) mod handler;
 pub(crate) mod table;
-
 use std::{
     io::{BufReader, Write},
     net::{TcpListener, TcpStream},
