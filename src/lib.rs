@@ -19,3 +19,17 @@ pub fn encode_as_array(message: impl Into<String>) -> String {
 
     resp
 }
+
+pub enum RespReplies {
+    NullString,
+    OKString,
+}
+
+impl RespReplies {
+    pub fn to_resp(&self) -> String {
+        match self {
+            RespReplies::NullString => "+(nil)\r\n".to_string(),
+            RespReplies::OKString => "+OK\r\n".to_string(),
+        }
+    }
+}

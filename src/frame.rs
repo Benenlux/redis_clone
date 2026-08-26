@@ -1,42 +1,5 @@
-use std::{
-    fmt,
-    io::{self, BufRead},
-    string::FromUtf8Error,
-};
-
-#[derive(Debug)]
-pub enum RespError {
-    ConnectionClosed,
-    Io(io::Error),
-    InvalidProtocol(String),
-    Utf8(FromUtf8Error),
-}
-
-impl fmt::Display for RespError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            RespError::ConnectionClosed => write!(f, "Connection closed by peer"),
-            RespError::Io(e) => write!(f, "IO Error: {}", e),
-            RespError::InvalidProtocol(msg) => write!(f, "Protocol Error: {}", msg),
-            RespError::Utf8(e) => write!(f, "UTF-8 Error: {}", e),
-        }
-    }
-}
-
-impl std::error::Error for RespError {}
-
-impl From<io::Error> for RespError {
-    fn from(error: io::Error) -> Self {
-        RespError::Io(error)
-    }
-}
-
-impl From<FromUtf8Error> for RespError {
-    fn from(error: FromUtf8Error) -> Self {
-        RespError::Utf8(error)
-    }
-}
-
+use crate::error::*;
+use std::io::BufRead;
 // Extracts the individual word from the bulk string
 // Returns the word inside of a new String
 fn parse_bulk_string<T: BufRead>(buf_reader: &mut T) -> Result<String, RespError> {

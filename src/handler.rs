@@ -1,5 +1,6 @@
-use crate::commands::set;
+use crate::error::RespError;
 use crate::table::Table;
+use crate::{commands::set, error::CommandError};
 use redis_clone::encode_error;
 use std::{str::FromStr, sync::Arc};
 
@@ -27,17 +28,17 @@ pub fn handle_request(request: Vec<String>, table: &Arc<Table>) -> Result<String
     let mut req_iter = request.into_iter();
     let req_command = match req_iter.next() {
         Some(val) => val,
-        None => return Err(encode_error("Expected command")),
+        None => return Err(CommandError::NoCommand.to_resp()),
     };
     let command = match req_command.parse::<CommandTypes>() {
         Ok(command) => command,
-        Err(_) => return Err(encode_error("Received invalid command")),
+        Err(_) => return Err(CommandError::InvalidCommand(req_command).to_resp()),
     };
     match command {
         CommandTypes::Get => {
-            let key = req_iter.next().ok_or(encode_error(
-                "Wrong number of arguments for 'get' command, expected key",
-            ))?;
+            let key = req_iter.next().ok_or(
+                CommandError::InsufficientArgument("GET".to_string(), "key".to_string()).to_resp(),
+            )?;
             Ok(table.get(&key))
         }
         CommandTypes::Set => set::handle_set(req_iter, table),
@@ -47,7 +48,9 @@ pub fn handle_request(request: Vec<String>, table: &Arc<Table>) -> Result<String
 #[cfg(test)]
 mod tests {
 
-    use redis_clone::encode_simple_string;
+    use redis_clone::{RespReplies, encode_simple_string};
+
+    use crate::error::CommandError;
 
     use super::*;
 
@@ -60,7 +63,7 @@ mod tests {
             "vroom vroom".to_string(),
         ];
         let response = handle_request(request, &table).unwrap_or_else(|e| e.to_string());
-        assert_eq!(response, encode_simple_string("OK"));
+        assert_eq!(response, RespReplies::OKString.to_resp());
     }
 
     #[test]
@@ -71,7 +74,7 @@ mod tests {
 
         assert_eq!(
             response,
-            encode_error("Wrong number of arguments for 'set' command, expected value")
+            CommandError::InsufficientArgument("SET".to_string(), "value".to_string()).to_resp()
         )
     }
 
@@ -91,7 +94,7 @@ mod tests {
             "vroom vroom".to_string(),
         ];
         let response_get = handle_request(request_2, &table).unwrap_or_else(|e| e.to_string());
-        assert_eq!(response_set, encode_simple_string("OK"));
+        assert_eq!(response_set, RespReplies::OKString.to_resp());
         assert_eq!(response_get, encode_simple_string("vroom vroom"));
     }
     #[test]
@@ -110,8 +113,8 @@ mod tests {
             "tring tring".to_string(),
         ];
         let response_get = handle_request(request_2, &table).unwrap_or_else(|e| e.to_string());
-        assert_eq!(response_set, encode_simple_string("OK"));
-        assert_eq!(response_get, encode_simple_string("(nil)"));
+        assert_eq!(response_set, RespReplies::OKString.to_resp());
+        assert_eq!(response_get, RespReplies::NullString.to_resp());
     }
 
     #[test]
@@ -121,7 +124,7 @@ mod tests {
         let response = handle_request(request, &table).unwrap_or_else(|e| e.to_string());
         assert_eq!(
             response,
-            encode_error("Wrong number of arguments for 'set' command, expected key")
+            CommandError::InsufficientArgument("SET".to_string(), "key".to_string()).to_resp()
         )
     }
 
@@ -132,7 +135,7 @@ mod tests {
 
         let response = handle_request(request, &table).unwrap_or_else(|e| e);
 
-        assert_eq!(response, encode_error("Expected command"))
+        assert_eq!(response, CommandError::NoCommand.to_resp())
     }
 
     #[test]
@@ -142,6 +145,9 @@ mod tests {
 
         let response = handle_request(request, &table).unwrap_or_else(|e| e);
 
-        assert_eq!(response, encode_error("Received invalid command"))
+        assert_eq!(
+            response,
+            CommandError::InvalidCommand("SUPERCOOLCOMMAND".to_string()).to_resp()
+        )
     }
 }

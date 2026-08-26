@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::RwLock;
 
-use redis_clone::{encode_error, encode_simple_string};
+use redis_clone::{RespReplies, encode_error, encode_simple_string};
 
 pub struct Table {
     cache: RwLock<HashMap<String, String>>,
@@ -17,7 +17,7 @@ impl Table {
         match self.cache.write() {
             Ok(mut l_cache) => {
                 l_cache.insert(key, val);
-                encode_simple_string("OK")
+                RespReplies::OKString.to_resp()
             }
             Err(_) => encode_error("Couldn't set key val"),
         }
@@ -29,7 +29,7 @@ impl Table {
                 let val = l_cache.get(key);
                 match val {
                     Some(val) => encode_simple_string(val.clone()),
-                    None => encode_simple_string("(nil)"),
+                    None => RespReplies::NullString.to_resp(),
                 }
             }
             // TODO: handle poisoned locks
@@ -49,7 +49,7 @@ mod tests {
         let table = Table::new();
         let result = table.set(String::from(TEST_STRING[0]), String::from(TEST_STRING[1]));
 
-        assert_eq!(encode_simple_string("OK"), result);
+        assert_eq!(RespReplies::OKString.to_resp(), result);
     }
 
     #[test]
@@ -59,7 +59,7 @@ mod tests {
         let get_result = table.get(&String::from(TEST_STRING[0]));
 
         assert_eq!(get_result, encode_simple_string(TEST_STRING[1]));
-        assert_eq!(set_result, encode_simple_string("OK"));
+        assert_eq!(set_result, RespReplies::OKString.to_resp());
     }
 
     #[test]
