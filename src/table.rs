@@ -1,7 +1,6 @@
+use crate::utils::{RespReplies, encode_error, encode_simple_string};
 use std::collections::HashMap;
 use std::sync::RwLock;
-
-use redis_clone::{RespReplies, encode_error, encode_simple_string};
 
 pub struct Table {
     cache: RwLock<HashMap<String, String>>,

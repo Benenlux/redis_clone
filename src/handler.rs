@@ -1,7 +1,5 @@
-use crate::error::RespError;
 use crate::table::Table;
 use crate::{commands::set, error::CommandError};
-use redis_clone::encode_error;
 use std::{str::FromStr, sync::Arc};
 
 #[derive(Debug, PartialEq)]
@@ -48,7 +46,7 @@ pub fn handle_request(request: Vec<String>, table: &Arc<Table>) -> Result<String
 #[cfg(test)]
 mod tests {
 
-    use redis_clone::{RespReplies, encode_simple_string};
+    use crate::utils::{RespReplies, encode_simple_string};
 
     use crate::error::CommandError;
 

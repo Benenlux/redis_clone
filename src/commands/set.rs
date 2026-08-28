@@ -1,7 +1,7 @@
-use redis_clone::{RespReplies, encode_simple_string};
-
 use crate::error::CommandError;
 use crate::table::Table;
+use crate::utils::{RespReplies, encode_simple_string};
+
 use std::sync::Arc;
 
 pub fn handle_set(
@@ -65,7 +65,7 @@ fn handle_modified_set(
 
 #[cfg(test)]
 mod tests {
-    use redis_clone::{RespReplies, encode_simple_string};
+    use crate::utils::{RespReplies, encode_simple_string};
 
     use super::*;
 
