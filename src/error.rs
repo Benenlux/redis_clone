@@ -1,5 +1,5 @@
 use std::{
-    fmt::{self, format},
+    fmt::{self},
     io::{self},
     string::FromUtf8Error,
 };

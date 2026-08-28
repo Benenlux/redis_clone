@@ -1,18 +1,11 @@
-mod commands;
-pub(crate) mod error;
-pub(crate) mod frame;
-pub(crate) mod handler;
-pub(crate) mod table;
+use redis_clone::frame::parse_stream;
+use redis_clone::handler::handle_request;
+use redis_clone::table::Table;
 use std::{
     io::{BufReader, Write},
     net::{TcpListener, TcpStream},
     sync::Arc,
 };
-
-use redis_clone::encode_error;
-
-use crate::{frame::parse_stream, handler::handle_request, table::Table};
-
 fn handle_stream(mut stream: TcpStream, table: Arc<Table>) {
     let mut buf_reader = BufReader::new(&mut stream);
     loop {
