@@ -92,6 +92,7 @@ mod tests {
         let input = b"$5\r\nHello\r\n";
         let mut cursor = Cursor::new(&input[..]);
         let result = parse_bulk_string(&mut cursor).unwrap();
+
         assert_eq!(result, "Hello")
     }
     #[test]
@@ -99,6 +100,7 @@ mod tests {
         let input = b"";
         let mut cursor = Cursor::new(&input[..]);
         let result = parse_bulk_string(&mut cursor);
+
         assert!(matches!(result, Err(RespError::ConnectionClosed)));
     }
     #[test]
@@ -106,6 +108,7 @@ mod tests {
         let input = b":\r\nHello\r\n";
         let mut cursor = Cursor::new(&input[..]);
         let result = parse_bulk_string(&mut cursor);
+
         match result {
             Err(RespError::InvalidProtocol(msg)) => {
                 assert_eq!(msg, "Expected '$', got ':'");

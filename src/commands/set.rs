@@ -16,7 +16,6 @@ pub fn handle_set(
         CommandError::InsufficientArgument("SET".to_string(), "value".to_string()).to_resp(),
     )?;
 
-    //If no further commands remain, do a normal set
     if commands.len() == 0 {
         return Ok(table.set(key, val));
     };
@@ -74,9 +73,11 @@ mod tests {
         let table = Arc::new(Table::new());
         let commands_no_conditional =
             vec!["CAR".to_string(), "vroom vroom".to_string()].into_iter();
+
         let mut response_set =
             handle_set(commands_no_conditional, &table).unwrap_or_else(|e| e.to_string());
         assert_eq!(response_set, RespReplies::OKString.to_resp());
+
         let commands_conditional = vec![
             "BIKE".to_string(),
             "tring tring".to_string(),
@@ -85,17 +86,21 @@ mod tests {
         .into_iter();
         response_set = handle_set(commands_conditional, &table).unwrap_or_else(|e| e.to_string());
         let response_get = table.get(&"BIKE".to_string());
+
         assert_eq!(response_set, RespReplies::NullString.to_resp());
         assert_eq!(response_get, RespReplies::NullString.to_resp());
     }
+
     #[test]
     fn test_xx_conditional_ok() {
         let table = Arc::new(Table::new());
         let commands_no_conditional =
             vec!["CAR".to_string(), "vroom vroom".to_string()].into_iter();
+
         let mut response_set =
             handle_set(commands_no_conditional, &table).unwrap_or_else(|e| e.to_string());
         assert_eq!(response_set, RespReplies::OKString.to_resp());
+
         let commands_conditional = vec![
             "CAR".to_string(),
             "tring tring".to_string(),
@@ -104,6 +109,7 @@ mod tests {
         .into_iter();
         response_set = handle_set(commands_conditional, &table).unwrap_or_else(|e| e.to_string());
         let response_get = table.get(&"CAR".to_string());
+
         assert_eq!(response_set, RespReplies::OKString.to_resp());
         assert_eq!(response_get, encode_simple_string("tring tring"));
     }
@@ -113,9 +119,11 @@ mod tests {
         let table = Arc::new(Table::new());
         let commands_no_conditional =
             vec!["CAR".to_string(), "vroom vroom".to_string()].into_iter();
+
         let mut response_set =
             handle_set(commands_no_conditional, &table).unwrap_or_else(|e| e.to_string());
         assert_eq!(response_set, RespReplies::OKString.to_resp());
+
         let commands_conditional = vec![
             "CAR".to_string(),
             "tring tring".to_string(),
@@ -124,6 +132,7 @@ mod tests {
         .into_iter();
         response_set = handle_set(commands_conditional, &table).unwrap_or_else(|e| e.to_string());
         let response_get = table.get(&"BIKE".to_string());
+
         assert_eq!(response_set, RespReplies::NullString.to_resp());
         assert_eq!(response_get, RespReplies::NullString.to_resp());
     }
@@ -133,9 +142,11 @@ mod tests {
         let table = Arc::new(Table::new());
         let commands_no_conditional =
             vec!["CAR".to_string(), "vroom vroom".to_string()].into_iter();
+
         let mut response_set =
             handle_set(commands_no_conditional, &table).unwrap_or_else(|e| e.to_string());
         assert_eq!(response_set, RespReplies::OKString.to_resp());
+
         let commands_conditional = vec![
             "BIKE".to_string(),
             "tring tring".to_string(),
@@ -144,6 +155,7 @@ mod tests {
         .into_iter();
         response_set = handle_set(commands_conditional, &table).unwrap_or_else(|e| e.to_string());
         let response_get = table.get(&"BIKE".to_string());
+
         assert_eq!(response_set, RespReplies::OKString.to_resp());
         assert_eq!(response_get, encode_simple_string("tring tring"));
     }
