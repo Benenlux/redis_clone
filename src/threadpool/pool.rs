@@ -1,7 +1,10 @@
 use std::{
     sync::{
         Arc, Mutex,
-        atomic::AtomicUsize,
+        atomic::{
+            AtomicUsize,
+            Ordering::{Acquire, Relaxed, SeqCst},
+        },
         mpsc::{Receiver, Sender, channel},
     },
     thread::{self},
@@ -9,10 +12,49 @@ use std::{
 
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
+struct PanicWatch<'a> {
+    active: bool,
+    shared_data: &'a Arc<ThreadPoolData>,
+}
+
+impl<'a> PanicWatch<'a> {
+    fn new(shared_data: &'a Arc<ThreadPoolData>) -> PanicWatch<'a> {
+        PanicWatch {
+            shared_data,
+            active: true,
+        }
+    }
+    fn cancel(mut self) {
+        self.active = false;
+    }
+}
+
+impl<'a> Drop for PanicWatch<'a> {
+    //If a thread panicks while the PanicWatcher is active, it automatically adds a new thread to
+    //the pool
+    fn drop(&mut self) {
+        if !self.active {
+            return;
+        };
+        self.shared_data.active_threads.fetch_sub(1, SeqCst);
+        if thread::panicking() {
+            self.shared_data.panicked_threads.fetch_add(1, SeqCst);
+        };
+        //spawn_threads has checking for active_threads against max_threads
+        spawn_threads(
+            self.shared_data.clone(),
+            self.shared_data.active_threads.load(Relaxed)
+                + self.shared_data.panicked_threads.load(Relaxed)
+                + 1,
+        );
+    }
+}
+
 struct ThreadPoolData {
     job_receiver: Mutex<Receiver<Job>>,
     max_threads: AtomicUsize,
     active_threads: AtomicUsize,
+    panicked_threads: AtomicUsize,
 }
 
 pub struct ThreadPool {
@@ -27,6 +69,7 @@ impl ThreadPool {
             job_receiver: Mutex::new(tx),
             max_threads: AtomicUsize::new(thread_count),
             active_threads: AtomicUsize::new(0),
+            panicked_threads: AtomicUsize::new(0),
         });
         ThreadPool {
             jobs: rx,
@@ -40,7 +83,10 @@ impl ThreadPool {
             .max_threads
             .load(std::sync::atomic::Ordering::Relaxed)
         {
-            println!("Spawning thread");
+            if cfg!(feature = "debug-print") {
+                println!("Spawning thread: {}", thread_number);
+            }
+
             spawn_threads(self.shared_data.clone(), thread_number)
         }
     }
@@ -53,24 +99,28 @@ impl ThreadPool {
             .send(Box::new(job))
             .expect("Unable to send job into queue")
     }
+
+    pub fn panic_count(&self) -> usize {
+        self.shared_data.panicked_threads.load(Relaxed)
+    }
 }
 
 fn spawn_threads(shared_data: Arc<ThreadPoolData>, thread_number: usize) {
     let builder = thread::Builder::new();
-    let max_threads = shared_data
-        .max_threads
-        .load(std::sync::atomic::Ordering::Relaxed);
-    let current_threads = shared_data
-        .active_threads
-        .load(std::sync::atomic::Ordering::Relaxed);
+    let max_threads = shared_data.max_threads.load(Relaxed);
+    let current_threads = shared_data.active_threads.load(Acquire);
     //return early if there are enough threads
     if current_threads >= max_threads {
         return;
     };
+    shared_data.active_threads.fetch_add(1, SeqCst);
     builder
         .spawn(move || {
+            let watcher = PanicWatch::new(&shared_data);
             loop {
-                println!("Thread {} spawned!", thread_number);
+                if cfg!(feature = "debug-print") {
+                    println!("Thread {} spawned!", thread_number);
+                }
                 //TODO: be less lazy about errors :p
                 let message = {
                     let lock = shared_data.job_receiver.lock().unwrap();
@@ -78,16 +128,22 @@ fn spawn_threads(shared_data: Arc<ThreadPoolData>, thread_number: usize) {
                 };
                 let job = match message {
                     Ok(job) => job,
-                    //If no message was received then the threadpool was dropped
+                    //If The connection is closed, drop the thread
                     Err(..) => {
-                        println!("No message received, dropping...");
+                        if cfg!(feature = "debug-print") {
+                            println!("Connection closed, dropping...");
+                        }
                         break;
                     }
                 };
-                println!("Looking for jobs to do from thread: {}", thread_number);
+
+                if cfg!(feature = "debug-print") {
+                    println!("Got a job to do for thread: {}", thread_number);
+                }
 
                 job();
             }
+            watcher.cancel();
         })
         .unwrap();
 }
