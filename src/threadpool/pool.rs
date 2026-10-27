@@ -113,6 +113,7 @@ fn spawn_threads(shared_data: Arc<ThreadPoolData>, thread_number: usize) {
     if current_threads >= max_threads {
         return;
     };
+
     shared_data.active_threads.fetch_add(1, SeqCst);
     builder
         .spawn(move || {
@@ -169,4 +170,6 @@ mod tests {
 
         assert_eq!(15, tx.recv().unwrap());
     }
+    //TODO: make test for panicked threads
+    //TODO: make test for correct amount of threads
 }
