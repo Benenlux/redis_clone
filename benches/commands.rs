@@ -1,7 +1,7 @@
 use redis_clone::frame::parse_stream;
 use redis_clone::handler::handle_request;
 use redis_clone::table::Table;
-use std::io::Cursor;
+use std::io::{Cursor, sink};
 use std::sync::Arc;
 
 fn main() {
@@ -42,11 +42,12 @@ fn test_set_accurate(bencher: divan::Bencher, amount: u32) {
         .bench_local_values(|payload| {
             let mut buf_reader = Cursor::new(payload);
 
-            // Loop until the buffer is fully consumed or parsing fails
+            let mut writer = sink();
+
             while (buf_reader.position() as usize) < buf_reader.get_ref().len() {
                 match parse_stream(&mut buf_reader) {
                     Ok(req) => {
-                        handle_request(req, &table).unwrap();
+                        handle_request(req, &table, &mut writer).unwrap();
                     }
                     Err(e) => {
                         eprintln!("Error while parsing stream: {}", e);
@@ -56,7 +57,6 @@ fn test_set_accurate(bencher: divan::Bencher, amount: u32) {
             }
         });
 }
-
 fn generate_bulk_commands(amount: u32) -> String {
     let mut commands = String::new();
 
