@@ -28,7 +28,7 @@ pub enum RespReplies {
 impl RespReplies {
     pub fn to_resp(&self) -> String {
         match self {
-            RespReplies::NullString => "+(nil)\r\n".to_string(),
+            RespReplies::NullString => "$-1\r\n".to_string(),
             RespReplies::OKString => "+OK\r\n".to_string(),
         }
     }
