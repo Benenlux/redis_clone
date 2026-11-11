@@ -8,8 +8,7 @@ fn main() {
     divan::main();
 }
 
-#[divan::bench(args = [1, 50, 100, 1000])]
-
+#[divan::bench(args = [1, 50, 100, 1000, 10000000])]
 fn test_set_raw(bencher: divan::Bencher, amount: u32) {
     let table: Table = Table::new();
 
@@ -20,8 +19,21 @@ fn test_set_raw(bencher: divan::Bencher, amount: u32) {
     });
 }
 
-#[divan::bench(args = [1, 50, 100, 1000])]
+#[divan::bench(args = [1, 50, 100, 1000, 10000000])]
+fn test_get_raw(bencher: divan::Bencher, amount: u32) {
+    let table: Table = Table::new();
 
+    for iteration in 0..amount {
+        table.set(format!("key_{}", iteration), format!("val_{}", iteration));
+    }
+
+    bencher.bench_local(|| {
+        for iteration in 0..amount {
+            table.get(&format!("key_{}", iteration));
+        }
+    });
+}
+#[divan::bench(args = [1, 50, 100, 1000, 10000000])]
 fn test_set_accurate(bencher: divan::Bencher, amount: u32) {
     let table: Arc<Table> = Arc::new(Table::new());
 
@@ -38,7 +50,7 @@ fn test_set_accurate(bencher: divan::Bencher, amount: u32) {
                     }
                     Err(e) => {
                         eprintln!("Error while parsing stream: {}", e);
-                        break; // Exit loop on EOF or parse error
+                        break;
                     }
                 }
             }

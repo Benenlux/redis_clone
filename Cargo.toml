@@ -15,5 +15,9 @@ divan = "0.1.21"
 debug-print = []
 verbose-print = []
 
+[profile.bench]
+opt-level = 1
+debug = "full"
+lto = false
+
 [profile.release]
-debug = 1
