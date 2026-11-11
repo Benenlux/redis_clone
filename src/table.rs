@@ -35,6 +35,16 @@ impl Table {
             Err(_) => encode_error("Poisoned lock"),
         }
     }
+
+    pub fn get_with<F, R>(&self, key: &str, f: F) -> Result<R, String>
+    where
+        F: FnOnce(Option<&str>) -> R,
+    {
+        match self.cache.read() {
+            Ok(guard) => Ok(f(guard.get(key).map(|s| s.as_str()))),
+            Err(_) => Err(encode_error("Poisoned lock")),
+        }
+    }
 }
 
 #[cfg(test)]
