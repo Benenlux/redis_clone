@@ -1,6 +1,6 @@
 use std::{
     fmt::{self},
-    io::{self},
+    io::{self, Write},
     string::FromUtf8Error,
 };
 
@@ -66,6 +66,28 @@ impl CommandError {
                 format!("-ERR Invalid Command: '{}'\r\n", command)
             }
             CommandError::NoCommand => "-ERR Expected command\r\n".to_string(),
+        }
+    }
+    pub fn write_to<W: Write>(&self, writer: &mut W) -> std::io::Result<()> {
+        match self {
+            CommandError::InvalidConditional => {
+                writer.write_all(b"-ERR Invalid conditional provided\r\n")
+            }
+            CommandError::CommandParseError(command) => {
+                write!(writer, "-ERR Unable to parse command: {}\r\n", command)
+            }
+            CommandError::ParseError => writer.write_all(b"-ERR unable to parse next command\r\n"),
+            CommandError::InsufficientArgument(command, args) => {
+                write!(
+                    writer,
+                    "-ERR Insufficient arguments received for '{}' command: missing {}\r\n",
+                    command, args
+                )
+            }
+            CommandError::InvalidCommand(cmd) => {
+                write!(writer, "-ERR Invalid command '{}'\r\n", cmd)
+            }
+            CommandError::NoCommand => writer.write_all(b"-ERR No command received\r\n"),
         }
     }
 }
