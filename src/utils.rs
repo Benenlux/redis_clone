@@ -26,10 +26,10 @@ pub enum RespReplies {
 }
 
 impl RespReplies {
-    pub fn to_resp(&self) -> String {
+    pub fn to_resp(&self) -> &'static [u8] {
         match self {
-            RespReplies::NullString => "$-1\r\n".to_string(),
-            RespReplies::OKString => "+OK\r\n".to_string(),
+            RespReplies::NullString => b"$-1\r\n",
+            RespReplies::OKString => b"+OK\r\n",
         }
     }
 }
