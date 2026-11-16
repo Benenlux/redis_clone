@@ -1,5 +1,6 @@
 use crate::utils::{RespReplies, encode_error, encode_simple_string};
 use std::collections::HashMap;
+use std::io::{IoSlice, Write};
 use std::sync::RwLock;
 
 pub struct Table {
@@ -12,14 +13,15 @@ impl Table {
             cache: RwLock::new(HashMap::new()),
         }
     }
-    pub fn set(&self, key: String, val: String) -> String {
-        match self.cache.write() {
+    pub fn set<W: Write>(&self, key: String, val: String, writer: &mut W) -> std::io::Result<()> {
+        let response: &[u8] = match self.cache.write() {
             Ok(mut l_cache) => {
                 l_cache.insert(key, val);
                 RespReplies::OKString.to_resp()
             }
-            Err(_) => encode_error("Couldn't set key val"),
-        }
+            Err(_) => RespReplies::NullString.to_resp(),
+        };
+        writer.write_all(response)
     }
 
     pub fn get(&self, key: &String) -> String {
