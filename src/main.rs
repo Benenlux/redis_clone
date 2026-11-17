@@ -28,7 +28,7 @@ fn handle_stream(mut stream: TcpStream, table: Arc<Table>) {
             if cfg!(feature = "verbose-print") {
                 println!("Sent back error: {:?}", err_resp);
             }
-            if let Err(io_err) = writer.write_all(err_resp.as_bytes()) {
+            if let Err(io_err) = writer.write_all(err_resp.to_string().as_bytes()) {
                 eprintln!("Failed to write to client (disconnected): {}", io_err);
                 break;
             }
