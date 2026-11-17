@@ -1,6 +1,7 @@
 use crate::table::Table;
+use crate::utils::AsResp;
 use crate::{commands::set, error::CommandError};
-use std::io::{IoSlice, Write};
+use std::io::{Error, ErrorKind, Write};
 use std::{str::FromStr, sync::Arc};
 
 #[derive(Debug, PartialEq)]
@@ -27,52 +28,51 @@ pub fn handle_request<W: Write>(
     request: Vec<String>,
     table: &Arc<Table>,
     writer: &mut W,
-) -> Result<(), String> {
+) -> std::io::Result<()> {
     let mut req_iter = request.into_iter();
     let req_command = match req_iter.next() {
         Some(val) => val,
-        None => return Err(CommandError::NoCommand.to_resp()),
+        None => {
+            CommandError::NoCommand.write_to(writer)?;
+            return Ok(());
+        }
     };
     let command = match req_command.parse::<CommandTypes>() {
         Ok(command) => command,
-        Err(_) => return Err(CommandError::InvalidCommand(req_command).to_resp()),
+        Err(_) => {
+            CommandError::InvalidCommand(req_command).write_to(writer)?;
+            return Ok(());
+        }
     };
     match command {
-        // CommandTypes::Get => {
-        //     let key = req_iter.next().ok_or(
-        //         CommandError::InsufficientArgument("GET".to_string(), "key".to_string()).to_resp(),
-        //     )?;
-        //     Ok(table.get(&key))
-        //
-        // }
         CommandTypes::Get => {
-            let key = req_iter.next().ok_or_else(|| {
-                CommandError::InsufficientArgument("GET".to_string(), "key".to_string()).to_resp()
-            })?;
+            let key = match req_iter.next() {
+                Some(k) => k,
+                None => {
+                    CommandError::InsufficientArgument("GET".to_string(), "key".to_string())
+                        .write_to(writer)?;
+                    return Ok(());
+                }
+            };
 
-            table
-                .get_with(&key, |val_opt| -> std::io::Result<()> {
-                    if let Some(val) = val_opt {
-                        let slices = [
-                            IoSlice::new(b"+"),
-                            IoSlice::new(val.as_bytes()),
-                            IoSlice::new(b"\r\n"),
-                        ];
-                        let _amount = writer.write_vectored(&slices)?;
-                    } else {
-                        writer.write_all(b"$-1\r\n")?;
-                    }
-                    Ok(())
-                })?
-                .map_err(|e| e.to_string())?;
-            Ok(())
+            let get_result = table.get_with(&key, |val_opt| -> std::io::Result<()> {
+                if let Some(val) = val_opt {
+                    val.as_resp().write_to(writer)?;
+                } else {
+                    writer.write_all(b"$-1\r\n")?;
+                }
+                Ok(())
+            });
+            match get_result {
+                Ok(io_res) => io_res?,
+                Err(err_str) => {
+                    return Err(Error::new(ErrorKind::Other, err_str));
+                }
+            }
         }
         CommandTypes::Set => {
-            let response = set::handle_set(req_iter, table)?;
-            writer
-                .write_all(response.as_bytes())
-                .map_err(|e| e.to_string())?;
-            Ok(())
+            set::handle_set(req_iter, table, writer)?;
         }
     }
+    Ok(())
 }

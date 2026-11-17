@@ -1,6 +1,6 @@
 use crate::error::CommandError;
 use crate::table::Table;
-use crate::utils::{RespReplies, encode_simple_string};
+use crate::utils::{AsResp, RespReplies, encode_simple_string};
 
 use std::io::Write;
 use std::sync::Arc;
@@ -66,11 +66,7 @@ fn handle_modified_set<W: Write>(
             &_ => CommandError::InvalidConditional.write_to(writer),
         }
     } else {
-        let slices = [
-            std::io::IoSlice::new(b"Other extra's not implemented, got: "),
-            std::io::IoSlice::new(next_command.as_bytes()),
-        ];
-        writer.write_vectored(&slices)?;
+        next_command.as_resp().write_to(writer)?;
         Ok(())
     }
 }
