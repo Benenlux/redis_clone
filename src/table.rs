@@ -78,56 +78,166 @@ impl Table {
 
 #[cfg(test)]
 mod tests {
+    use std::io::sink;
     use std::thread;
 
     use super::*;
+
     static TEST_STRING: [&str; 2] = ["Currency", "Euro"];
+
     #[test]
     fn set_string() {
         let table = Table::new();
-        let result = table.set(String::from(TEST_STRING[0]), String::from(TEST_STRING[1]));
+        let mut buf = Vec::new();
 
-        assert_eq!(RespReplies::OKString.to_resp(), result);
+        table
+            .set(
+                String::from(TEST_STRING[0]),
+                String::from(TEST_STRING[1]),
+                &mut buf,
+            )
+            .unwrap();
+
+        assert_eq!(buf, RespReplies::OKString.to_resp());
     }
 
     #[test]
-    fn set_get_string() {
+    fn set_and_get_write_existing_key() {
         let table = Table::new();
-        let set_result = table.set(String::from(TEST_STRING[0]), String::from(TEST_STRING[1]));
-        let get_result = table.get(&String::from(TEST_STRING[0]));
+        let mut set_buf = Vec::new();
+        let mut get_buf = Vec::new();
 
-        assert_eq!(get_result, encode_simple_string(TEST_STRING[1]));
-        assert_eq!(set_result, RespReplies::OKString.to_resp());
+        table
+            .set(
+                String::from(TEST_STRING[0]),
+                String::from(TEST_STRING[1]),
+                &mut set_buf,
+            )
+            .unwrap();
+        assert_eq!(set_buf, RespReplies::OKString.to_resp());
+
+        table.get_write(TEST_STRING[0], &mut get_buf).unwrap();
+
+        // Compare against whatever `val.as_resp()` writes for TEST_STRING[1]
+        let mut expected_buf = Vec::new();
+        TEST_STRING[1]
+            .to_string()
+            .as_resp()
+            .write_to(&mut expected_buf)
+            .unwrap();
+        assert_eq!(get_buf, expected_buf);
     }
 
     #[test]
-    fn multithread_set_get() {
+    fn get_write_missing_key() {
+        let table = Table::new();
+        let mut buf = Vec::new();
+
+        table.get_write("nonexistent_key", &mut buf).unwrap();
+
+        assert_eq!(buf, RespReplies::NullString.to_resp());
+    }
+
+    #[test]
+    fn overwrite_existing_key() {
+        let table = Table::new();
+        let mut buf = Vec::new();
+
+        table
+            .set("key".to_string(), "initial".to_string(), &mut sink())
+            .unwrap();
+        table
+            .set("key".to_string(), "updated".to_string(), &mut sink())
+            .unwrap();
+
+        table.get_write("key", &mut buf).unwrap();
+
+        let mut expected_buf = Vec::new();
+        "updated"
+            .to_string()
+            .as_resp()
+            .write_to(&mut expected_buf)
+            .unwrap();
+        assert_eq!(buf, expected_buf);
+    }
+
+    #[test]
+    fn get_with_closure() {
+        let table = Table::new();
+        table
+            .set(
+                String::from(TEST_STRING[0]),
+                String::from(TEST_STRING[1]),
+                &mut sink(),
+            )
+            .unwrap();
+
+        // Check existing key
+        let found_len = table
+            .get_with(TEST_STRING[0], |val| val.map(|s| s.len()))
+            .unwrap();
+        assert_eq!(found_len, Some(TEST_STRING[1].len()));
+
+        // Check missing key
+        let missing = table.get_with("missing", |val| val.is_none()).unwrap();
+        assert!(missing);
+    }
+
+    #[test]
+    fn multithread_set_and_concurrent_get() {
         let table = Table::new();
 
         const NUM_THREADS: usize = 10;
         const INSERTS_PER_THREAD: usize = 100;
+
+        // 1. Concurrent writes across 10 threads
         thread::scope(|s| {
-            //Spawn a thread that inserts 100 times, 10 times.
             for thread_id in 0..NUM_THREADS {
                 let table_ref = &table;
-
                 s.spawn(move || {
                     for i in 0..INSERTS_PER_THREAD {
                         let key = format!("key_{}_{}", thread_id, i);
                         let val = format!("val_{}_{}", thread_id, i);
-                        table_ref.set(key, val);
+                        table_ref.set(key, val, &mut sink()).unwrap();
                     }
                 });
             }
         });
-        let cache = table.cache.read().unwrap();
+
         let expected_total = NUM_THREADS * INSERTS_PER_THREAD;
+        assert_eq!(expected_total, table.cache.read().unwrap().len());
 
-        let last_thread_id = NUM_THREADS - 1;
-        let key = format!("key_{}_4", last_thread_id);
-        let expected_val = format!("val_{}_4", last_thread_id);
+        // 2. Concurrent reads and writes simultaneously to stress-test the RwLock
+        thread::scope(|s| {
+            // Reader threads verifying inserted keys
+            for thread_id in 0..NUM_THREADS {
+                let table_ref = &table;
+                s.spawn(move || {
+                    let key = format!("key_{}_4", thread_id);
+                    let expected_val = format!("val_{}_4", thread_id);
 
-        assert_eq!(table.get(&key), encode_simple_string(expected_val));
-        assert_eq!(expected_total, cache.len());
+                    let mut buf = Vec::new();
+                    table_ref.get_write(&key, &mut buf).unwrap();
+
+                    let mut expected_buf = Vec::new();
+                    expected_val.as_resp().write_to(&mut expected_buf).unwrap();
+                    assert_eq!(buf, expected_buf);
+                });
+            }
+
+            // Concurrent writer updating a separate key while readers are active
+            let table_ref = &table;
+            s.spawn(move || {
+                table_ref
+                    .set(
+                        "concurrent_key".to_string(),
+                        "value".to_string(),
+                        &mut sink(),
+                    )
+                    .unwrap();
+            });
+        });
+
+        assert_eq!(expected_total + 1, table.cache.read().unwrap().len());
     }
 }
