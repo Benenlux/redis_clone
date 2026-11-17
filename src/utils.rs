@@ -1,3 +1,5 @@
+use std::io::{IoSlice, Write};
+
 pub fn encode_error(message: impl Into<String>) -> String {
     format!("-ERR {}\r\n", message.into())
 }
@@ -31,5 +33,28 @@ impl RespReplies {
             RespReplies::NullString => b"$-1\r\n",
             RespReplies::OKString => b"+OK\r\n",
         }
+    }
+}
+
+pub struct SimpleString<'a>(pub &'a str);
+
+impl<'a> SimpleString<'a> {
+    pub fn write_to<W: Write>(&self, writer: &mut W) -> std::io::Result<usize> {
+        let slices = [
+            IoSlice::new(b"+"),
+            IoSlice::new(self.0.as_bytes()),
+            IoSlice::new(b"\r\n"),
+        ];
+        writer.write_vectored(&slices)
+    }
+}
+
+pub trait AsResp {
+    fn as_resp(&self) -> SimpleString<'_>;
+}
+
+impl AsResp for str {
+    fn as_resp(&self) -> SimpleString<'_> {
+        SimpleString(self)
     }
 }

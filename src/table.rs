@@ -1,10 +1,16 @@
-use crate::utils::{RespReplies, encode_error, encode_simple_string};
+use crate::utils::{AsResp, RespReplies, encode_error, encode_simple_string};
 use std::collections::HashMap;
 use std::io::{IoSlice, Write};
 use std::sync::RwLock;
 
 pub struct Table {
     cache: RwLock<HashMap<String, String>>,
+}
+
+impl Default for Table {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Table {
@@ -30,11 +36,32 @@ impl Table {
                 let val = l_cache.get(key);
                 match val {
                     Some(val) => encode_simple_string(val.clone()),
-                    None => RespReplies::NullString.to_resp(),
+                    None => "$-1\r\n".to_string(),
                 }
             }
             // TODO: handle poisoned locks
             Err(_) => encode_error("Poisoned lock"),
+        }
+    }
+
+    // Retrieves a value from the cache by key and writes its RESP representation
+    /// to the given writer.
+    ///
+    /// If the key is missing or the cache lock is poisoned, a null RESP reply is written instead.
+    pub fn get_write<W: Write>(&self, key: &str, writer: &mut W) -> std::io::Result<()> {
+        match self.cache.read() {
+            Ok(l_cache) => match l_cache.get(key) {
+                Some(val) => {
+                    val.as_resp().write_to(writer)?;
+                    Ok(())
+                }
+                None => {
+                    drop(l_cache);
+                    writer.write_all(RespReplies::NullString.to_resp())
+                }
+            },
+            // TODO: handle poisoned locks
+            Err(_) => writer.write_all(RespReplies::NullString.to_resp()),
         }
     }
 
